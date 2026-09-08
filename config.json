@@ -1,0 +1,80 @@
+{
+  "icon": "box",
+  "main": "runtime/index.js",
+  "uiSlots": {
+    "footer": "check.footer"
+  },
+  "slotDefaults": {
+    "footer": {
+      "side": "hidden",
+      "order": 200
+    }
+  },
+  "settingsSchema": {
+    "fields": [
+      {
+        "key": "strictFilename",
+        "label": "Strict filenames",
+        "type": "boolean",
+        "default": false,
+        "description": "Warn when two files share the same name (ignoring extension).",
+        "labelKey": "auto.3f9714e381b4",
+        "descriptionKey": "auto.cdc7582f2de4"
+      },
+      {
+        "key": "ignoredExtensions",
+        "label": "Ignored extensions",
+        "type": "chips",
+        "default": ".json, .jsonl",
+        "description": "Comma-separated file extensions skipped by the filename check. .json and .jsonl are always ignored.",
+        "labelKey": "auto.dcb9d121fdf0",
+        "descriptionKey": "auto.70c6ac4549b3"
+      },
+      {
+        "key": "templateCheck",
+        "label": "Strict template check",
+        "type": "boolean",
+        "default": true,
+        "description": "Warn when a note does not match the template for its type exactly (keys, order and value types).",
+        "labelKey": "auto.572f2ac4595f",
+        "descriptionKey": "auto.3f9755e92b12"
+      },
+      {
+        "key": "excludedFolders",
+        "label": "Excluded folders",
+        "type": "chips",
+        "default": "archive/templates",
+        "description": "Comma-separated folders skipped by both checks.",
+        "labelKey": "auto.956d3039f8ba",
+        "descriptionKey": "auto.2b1abac0eede"
+      },
+      {
+        "key": "excludedPatterns",
+        "label": "Excluded patterns",
+        "type": "chips",
+        "default": "Untitled",
+        "description": "Comma-separated path substrings to skip.",
+        "labelKey": "auto.89e396116977",
+        "descriptionKey": "auto.7cd7cd45a31e"
+      },
+      {
+        "key": "ignoredKeys",
+        "label": "Ignored keys",
+        "type": "chips",
+        "default": "",
+        "description": "Comma-separated frontmatter keys ignored during the template comparison.",
+        "labelKey": "auto.d1767c91c535",
+        "descriptionKey": "auto.a0432d9e1d11"
+      }
+    ]
+  },
+  "settingsView": "check.settings",
+  "drivers": [],
+  "provides": [
+    {
+      "id": "workspace.surface",
+      "kind": "extension",
+      "version": "1.0.0"
+    }
+  ]
+}
