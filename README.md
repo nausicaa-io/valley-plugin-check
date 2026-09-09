@@ -24,3 +24,7 @@ Open **Settings → Check** to configure filename and template checks. Add folde
 ## Requirements and updates
 
 Requires Valley desktop 0.1.0 or later and plugin API v4. Updates and branch changes are applied explicitly from GitHub settings. Removing the installation preserves your saved settings.
+
+## Development
+
+Use Node 24.19.0 and npm 11.17.0. Run `npm ci` and `npm run check` in this directory. The package owns its dependencies, tests, localization, and vendored SDK/tool/testkit archives; no Valley app checkout is required. `npm run check` validates imports, types, tests, and builds `runtime/index.js`. Commit rebuilt runtime files with source changes.

@@ -29,7 +29,16 @@ export const generatedCatalogs = {
     "auto.d1767c91c535": "Ignored keys",
     "auto.dcb9d121fdf0": "Ignored extensions",
     "auto.e0a836ec9bdd": "Vault-relative folder. Each template defines the schema for its frontmatter \"type\".",
-    "auto.e6cb55c694b8": "Unknown type"
+    "auto.e6cb55c694b8": "Unknown type",
+    "plugin.check.field.strictNames": "Strict filenames",
+    "plugin.check.field.ignoredExtensions": "Ignored extensions",
+    "plugin.check.field.strictTemplate": "Strict template check",
+    "plugin.check.field.templatesFolder": "Templates folder",
+    "plugin.check.field.excludedFolders": "Excluded folders",
+    "plugin.check.field.excludedPatterns": "Excluded patterns",
+    "plugin.check.field.ignoredKeys": "Ignored keys",
+    "plugin.check.desc": "Validates filenames and note templates against your rules and reports problems in the footer.",
+    "plugin.check.name": "Check"
   },
   "de": {
     "auto.04571e759593": "Keine Frontsache",
@@ -59,7 +68,16 @@ export const generatedCatalogs = {
     "auto.d1767c91c535": "Ignorierte Schlüssel",
     "auto.dcb9d121fdf0": "Ignorierte Erweiterungen",
     "auto.e0a836ec9bdd": "Vault-relativer Ordner. Jede Vorlage definiert das Schema für ihren Frontmatter-„Typ“.",
-    "auto.e6cb55c694b8": "Unbekannter Typ"
+    "auto.e6cb55c694b8": "Unbekannter Typ",
+    "plugin.check.field.strictNames": "Strenge Dateinamen",
+    "plugin.check.field.ignoredExtensions": "Ignorierte Erweiterungen",
+    "plugin.check.field.strictTemplate": "Strenge Vorlagenprüfung",
+    "plugin.check.field.templatesFolder": "Vorlagenordner",
+    "plugin.check.field.excludedFolders": "Ausgeschlossene Ordner",
+    "plugin.check.field.excludedPatterns": "Ausgeschlossene Muster",
+    "plugin.check.field.ignoredKeys": "Ignorierte Schlüssel",
+    "plugin.check.desc": "Prüft Dateinamen und Notizvorlagen gegen deine Regeln und meldet Probleme in der Fußzeile.",
+    "plugin.check.name": "Prüfen"
   },
   "es": {
     "auto.04571e759593": "Sin front-asunto",
@@ -89,7 +107,16 @@ export const generatedCatalogs = {
     "auto.d1767c91c535": "Claves ignoradas",
     "auto.dcb9d121fdf0": "Extensiones ignoradas",
     "auto.e0a836ec9bdd": "Carpeta relativa al almacén. Cada plantilla define el esquema para su \"tipo\" de tema inicial.",
-    "auto.e6cb55c694b8": "tipo desconocido"
+    "auto.e6cb55c694b8": "tipo desconocido",
+    "plugin.check.field.strictNames": "Nombres de archivo estrictos",
+    "plugin.check.field.ignoredExtensions": "Extensiones ignoradas",
+    "plugin.check.field.strictTemplate": "Comprobación estricta de plantillas",
+    "plugin.check.field.templatesFolder": "Carpeta de plantillas",
+    "plugin.check.field.excludedFolders": "Carpetas excluidas",
+    "plugin.check.field.excludedPatterns": "Patrones excluidos",
+    "plugin.check.field.ignoredKeys": "Claves ignoradas",
+    "plugin.check.desc": "Valida los nombres de archivo y las plantillas de notas según tus reglas e informa de los problemas en el pie.",
+    "plugin.check.name": "Comprobar"
   },
   "fr": {
     "auto.04571e759593": "Pas de front",
@@ -119,7 +146,16 @@ export const generatedCatalogs = {
     "auto.d1767c91c535": "Clés ignorées",
     "auto.dcb9d121fdf0": "Extensions ignorées",
     "auto.e0a836ec9bdd": "Dossier relatif au coffre-fort. Chaque modèle définit le schéma pour son « type » de premier plan.",
-    "auto.e6cb55c694b8": "Type inconnu"
+    "auto.e6cb55c694b8": "Type inconnu",
+    "plugin.check.field.strictNames": "Noms de fichiers stricts",
+    "plugin.check.field.ignoredExtensions": "Extensions ignorées",
+    "plugin.check.field.strictTemplate": "Vérification stricte des modèles",
+    "plugin.check.field.templatesFolder": "Dossier des modèles",
+    "plugin.check.field.excludedFolders": "Dossiers exclus",
+    "plugin.check.field.excludedPatterns": "Motifs exclus",
+    "plugin.check.field.ignoredKeys": "Clés ignorées",
+    "plugin.check.desc": "Valide les noms de fichiers et les modèles de notes selon vos règles et indique les problèmes en pied de page.",
+    "plugin.check.name": "Vérifier"
   },
   "zh-CN": {
     "auto.04571e759593": "没有前置问题",
@@ -149,6 +185,15 @@ export const generatedCatalogs = {
     "auto.d1767c91c535": "忽略的键",
     "auto.dcb9d121fdf0": "忽略的扩展",
     "auto.e0a836ec9bdd": "保管库相对文件夹。每个模板都定义了其 frontmatter“类型”的架构。",
-    "auto.e6cb55c694b8": "未知类型"
+    "auto.e6cb55c694b8": "未知类型",
+    "plugin.check.field.strictNames": "严格文件名",
+    "plugin.check.field.ignoredExtensions": "忽略的扩展名",
+    "plugin.check.field.strictTemplate": "严格模板检查",
+    "plugin.check.field.templatesFolder": "模板文件夹",
+    "plugin.check.field.excludedFolders": "排除的文件夹",
+    "plugin.check.field.excludedPatterns": "排除的模式",
+    "plugin.check.field.ignoredKeys": "忽略的键",
+    "plugin.check.desc": "按你的规则校验文件名和笔记模板，并在页脚报告问题。",
+    "plugin.check.name": "检查"
   }
 } satisfies BundledPluginTranslationCatalogs

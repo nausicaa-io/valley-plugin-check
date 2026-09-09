@@ -1,0 +1,8 @@
+{
+  "strictFilename": true,
+  "ignoredExtensions": ".json, .jsonl",
+  "templateCheck": true,
+  "excludedFolders": "Archive",
+  "excludedPatterns": "Untitled",
+  "ignoredKeys": ""
+}
