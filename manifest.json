@@ -4,8 +4,12 @@
   "name": "Check",
   "description": "Footer warning when the vault is not right: duplicate file names and notes that deviate from their template.",
   "version": "1.0.1",
-  "author": "Yanik",
-  "authorUrl": "https://github.com/yanik02",
+  "author": [
+    "Yanik"
+  ],
+  "authorUrl": [
+    "https://github.com/yanik02"
+  ],
   "isDesktopOnly": true,
   "minAppVersion": "0.1.0",
   "enabled": true,
