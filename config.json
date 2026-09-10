@@ -83,5 +83,8 @@
     "es": "runtime/locales/es.json",
     "fr": "runtime/locales/fr.json",
     "zh-CN": "runtime/locales/zh-CN.json"
+  },
+  "runtime": {
+    "ui": "runtime/index.js"
   }
 }

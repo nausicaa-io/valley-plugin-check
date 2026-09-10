@@ -1,9 +1,9 @@
 {
-  "apiVersion": 4,
+  "apiVersion": 5,
   "id": "check",
   "name": "Check",
   "description": "Footer warning when the vault is not right: duplicate file names and notes that deviate from their template.",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "author": [
     "Yanik"
   ],
