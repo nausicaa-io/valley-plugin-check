@@ -12,7 +12,5 @@
   ],
   "isDesktopOnly": true,
   "minAppVersion": "0.1.0",
-  "enabled": true,
-  "nameKey": "auto.4b5e84be0e45",
-  "descriptionKey": "auto.24b342717bff"
+  "enabled": true
 }
