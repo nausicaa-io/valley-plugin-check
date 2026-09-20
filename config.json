@@ -1,6 +1,7 @@
 {
   "icon": "box",
   "main": "runtime/index.js",
+  "indexState": "scoped",
   "uiSlots": {
     "footer": "check.footer"
   },

@@ -7,28 +7,17 @@
  *   - Strict template check (configured in Settings → Import Template): every
  *     note must match the template for its `type`.
  *
- * It runs entirely in the renderer off `api.getState().indexEntries` (parsed,
+ * It runs entirely in the renderer through a scoped index observation (parsed,
  * order-preserving frontmatter) and re-evaluates on vault and settings changes.
  * Like the Clock plugin it uses `api.React` and never imports `react`.
  */
 import { PLUGIN_SURFACE_V1, type ValleyPluginApi, type ValleyPluginModule } from '@valley/plugin-sdk'
-import type { CheckConfig, DeviationKind } from './types'
-import { parseExtList, parseList, runChecks } from './check'
+import type { CheckResult, DeviationKind } from './types'
+import { useVisibleRange } from './visibleRange'
+import { parseExtList, parseList } from './check'
+import { acquireCheckProjection } from './projection'
 import { initLocalization } from './localization'
 import { uiText } from './localization'
-
-function readConfig(api: ValleyPluginApi): CheckConfig {
-  const s = api.settings.get()
-  return {
-    strictFilename: s.strictFilename === true,
-    templateCheck: s.templateCheck === true,
-    templatesFolder: api.getState().templateFolder,
-    excludedFolders: parseList(s.excludedFolders),
-    excludedPatterns: parseList(s.excludedPatterns),
-    ignoredKeys: parseList(s.ignoredKeys),
-    ignoredExtensions: parseExtList(s.ignoredExtensions)
-  }
-}
 
 const CATEGORY_LABELS: { kind: DeviationKind; labelKey: string }[] = [
   { kind: 'no_frontmatter', labelKey: 'auto.04571e759593' },
@@ -40,8 +29,9 @@ const CATEGORY_LABELS: { kind: DeviationKind; labelKey: string }[] = [
   { kind: 'wrong_type', labelKey: 'auto.43b6abbe96be' }
 ]
 
-export function register(api: ValleyPluginApi): () => void {
+export function register(api: ValleyPluginApi): () => Promise<void> {
   initLocalization(api)
+  const projection = acquireCheckProjection(api)
   const React = api.React
   const h = React.createElement
   let view = { category: 'files' as 'files' | 'validation', path: '' }
@@ -84,7 +74,7 @@ export function register(api: ValleyPluginApi): () => void {
   const useCheckRefresh = (): void => {
     const [, force] = React.useReducer((n: number) => n + 1, 0)
     React.useEffect(() => {
-      const offState = api.subscribe(() => force())
+      const offState = api.subscribeState(['templateFolder'], () => force())
       const onSettings = (): void => force()
       const offSettings = api.settings.subscribe(onSettings)
       const offLocal = subscribe(force)
@@ -107,67 +97,17 @@ export function register(api: ValleyPluginApi): () => void {
   }
 
   const Check = ({ popover = false }: { popover?: boolean } = {}): ReturnType<typeof h> | null => {
-    useCheckRefresh()
+    const { result } = React.useSyncExternalStore(projection.subscribe, projection.getSnapshot)
     const selected = React.useSyncExternalStore(subscribe, () => view)
-
-    const config = readConfig(api)
-    const entries = api.getState().indexEntries
-    // runChecks is expensive over the index, so re-run only when entries or the
-    // config VALUE changes. readConfig returns a fresh object each render, so key
-    // on its serialization rather than its (always-new) identity.
-    const configKey = JSON.stringify(config)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const result = React.useMemo(() => runChecks(entries, config), [entries, configKey])
+    const [, refreshLanguage] = React.useReducer((revision: number) => revision + 1, 0)
+    React.useEffect(() => api.ui.onLanguageChanged(refreshLanguage), [])
 
     const jump = (relPath: string, e?: { metaKey: boolean; ctrlKey: boolean }): void =>
       api.workspace.openFile(relPath, undefined, { newTab: e ? api.ui.hasModKey(e) : false })
 
-    // Chip 1 — duplicate file names.
-    const fileRows: ReturnType<typeof h>[] = []
-    for (const conflict of result.conflicts) {
-      for (const path of conflict.paths) {
-        fileRows.push(
-          h(
-            'button',
-            { key: `dup-${path}`, className: `check-popover-row${selected.path === path ? ' selected' : ''}`, onFocus: () => setView({ category: 'files', path }), onClick: (e: React.MouseEvent) => { setView({ category: 'files', path }); jump(path, e) }, title: path },
-            h('span', { className: 'check-popover-path' }, path),
-            h('span', { className: 'check-popover-detail' }, conflict.name)
-          )
-        )
-      }
-    }
     const fileCount = result.conflicts.length
-
-    // Chip 2 — notes that deviate from their template, grouped by category.
-    const tplRows: ReturnType<typeof h>[] = []
-    for (const cat of CATEGORY_LABELS) {
-      const items = result.deviations.filter((d) => d.kind === cat.kind)
-      if (items.length === 0) continue
-      tplRows.push(h('div', { key: `h-${cat.kind}`, className: 'check-popover-group' }, `${uiText(cat.labelKey)} (${items.length})`))
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i]
-        tplRows.push(
-          h(
-            'button',
-            {
-              key: `${cat.kind}-${i}-${item.filePath}`,
-              className: `check-popover-row${selected.path === item.filePath ? ' selected' : ''}`,
-              onFocus: () => setView({ category: 'validation', path: item.filePath }),
-              onClick: (e: React.MouseEvent) => { setView({ category: 'validation', path: item.filePath }); jump(item.filePath, e) },
-              title: item.filePath
-            },
-            h('span', { className: 'check-popover-path' }, item.filePath),
-            item.detail ? h('span', { className: 'check-popover-detail' }, item.detail) : null
-          )
-        )
-      }
-    }
     const tplCount = result.deviations.length
-    if (popover) return h('div', { className: 'check-results' },
-      h(api.ui.SurfaceHeader, { surface: 'footer' }),
-      h('div', { className: 'check-popover-list' }, ...(selected.category === 'files' ? fileRows : tplRows)),
-      !(selected.category === 'files' ? fileRows : tplRows).length ? h('p', null, uiText('auto.768f9220e68b')) : null
-    )
+    if (popover) return h(CheckResults, { result, selected, jump })
 
     return h(
       React.Fragment,
@@ -184,6 +124,62 @@ export function register(api: ValleyPluginApi): () => void {
         summary: uiText('auto.8497c0f895ff', { p0: tplCount, p1: tplCount === 1 ? '' : 's' }),
         category: 'validation'
       })
+    )
+  }
+
+  const CheckResults = ({ result, selected, jump }: {
+    result: CheckResult
+    selected: typeof view
+    jump(path: string, event?: React.MouseEvent): void
+  }): ReturnType<typeof h> => {
+    type ResultRow = { id: string; path: string; detail?: string } | { id: string; labelKey: string; count: number }
+    const rows = React.useMemo<ResultRow[]>(() => {
+      if (selected.category === 'files') return result.conflicts.flatMap(conflict => conflict.paths.map(path => ({ id: `file:${path}`, path, detail: conflict.name })))
+      const byKind = new Map<DeviationKind, typeof result.deviations>()
+      for (const item of result.deviations) {
+        const group = byKind.get(item.kind) ?? []
+        group.push(item)
+        byKind.set(item.kind, group)
+      }
+      return CATEGORY_LABELS.flatMap(category => {
+        const items = byKind.get(category.kind) ?? []
+        return items.length ? [
+          { id: `header:${category.kind}`, labelKey: category.labelKey, count: items.length },
+          ...items.map((item, index) => ({ id: `${category.kind}:${item.filePath}:${index}`, path: item.filePath, detail: item.detail }))
+        ] : []
+      })
+    }, [result, selected.category])
+    const ids = React.useMemo(() => rows.map(row => row.id), [rows])
+    const visible = useVisibleRange(React, { ids, estimate: 44 })
+    const show = visible.show
+    React.useLayoutEffect(() => {
+      const row = rows.find(row => 'path' in row && row.path === selected.path)
+      if (row) show(row.id)
+    }, [rows, selected.path, show])
+    const move = (index: number, event: React.KeyboardEvent): void => {
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End', 'Tab'].includes(event.key)) return
+      const direction = event.key === 'ArrowUp' || event.key === 'Tab' && event.shiftKey || event.key === 'End' ? -1 : 1
+      let next = event.key === 'Home' ? 0 : event.key === 'End' ? rows.length - 1 : index + direction
+      while (next >= 0 && next < rows.length && !('path' in rows[next])) next += direction
+      if (next < 0 || next >= rows.length) return
+      event.preventDefault()
+      show(rows[next].id, 'button')
+    }
+    return h('div', { className: 'check-results' },
+      h(api.ui.SurfaceHeader, { surface: 'footer' }),
+      h('div', { className: 'check-popover-list', ref: visible.ref }, ...visible.render(index => {
+        const row = rows[index]
+        if (!('path' in row)) return h('div', { 'data-visible-key': row.id, className: 'check-popover-group' }, `${uiText(row.labelKey)} (${row.count})`)
+        return h('button', {
+          'data-visible-key': row.id,
+          className: `check-popover-row${selected.path === row.path ? ' selected' : ''}`,
+          onFocus: () => setView({ category: selected.category, path: row.path }),
+          onClick: (event: React.MouseEvent) => { setView({ category: selected.category, path: row.path }); jump(row.path, event) },
+          onKeyDown: (event: React.KeyboardEvent) => move(index, event),
+          title: row.path
+        }, h('span', { className: 'check-popover-path' }, row.path), row.detail ? h('span', { className: 'check-popover-detail' }, row.detail) : null)
+      })),
+      !rows.length ? h('p', null, uiText('auto.768f9220e68b')) : null
     )
   }
 
@@ -263,8 +259,9 @@ export function register(api: ValleyPluginApi): () => void {
     paletteSafe: true,
     sideEffect: 'read',
     usage: 'check status',
-    run: () => {
-      const result = runChecks(api.getState().indexEntries, readConfig(api))
+    run: async () => {
+      await projection.ready()
+      const result = projection.getSnapshot().result
       const byKind: Record<string, number> = {}
       for (const d of result.deviations) byKind[d.kind] = (byKind[d.kind] ?? 0) + 1
       return {
@@ -289,15 +286,16 @@ export function register(api: ValleyPluginApi): () => void {
       return `${s.filenameConflicts} filename conflict${s.filenameConflicts === 1 ? '' : 's'}, ${s.templateDeviations} template deviation${s.templateDeviations === 1 ? '' : 's'}${kinds ? ` (${kinds})` : ''}.`
     }
   })
-  const offChanges = api.subscribe(() => { for (const listener of listeners) listener() })
+  const offChanges = projection.subscribe(() => { for (const listener of listeners) listener() })
   const offSurface = api.interop.extensions.provide(PLUGIN_SURFACE_V1, {
     id: 'check.results', surface: 'footer', subscribe,
     getSnapshot: () => ({ title: 'Check', view: { ...view }, ...(view.path ? { item: { id: `${view.category}:${view.path}`, title: view.path, state: { ...view } } } : {}) }),
-    restore: (state, _instanceId, options) => {
+    restore: async (state, _instanceId, options) => {
+      await projection.ready()
       const category = state.category === 'validation' ? 'validation' : 'files'
       const path = typeof state.path === 'string' ? state.path : ''
       if (path) {
-        const result = runChecks(api.getState().indexEntries, readConfig(api))
+        const result = projection.getSnapshot().result
         const exists = category === 'files' ? result.conflicts.some((item) => item.paths.includes(path)) : result.deviations.some((item) => item.filePath === path)
         if (!exists) throw new Error('This diagnostic no longer exists; the issue may have been resolved')
       }
@@ -329,8 +327,9 @@ export function register(api: ValleyPluginApi): () => void {
         return { category, path: String(input.path ?? ''), limit, offset }
       }
     },
-    run: ({ category, path, limit, offset }) => {
-      const result = runChecks(api.getState().indexEntries, readConfig(api))
+    run: async ({ category, path, limit, offset }) => {
+      await projection.ready()
+      const result = projection.getSnapshot().result
       const rows = [
         ...(category !== 'validation' ? result.conflicts.flatMap((item) => item.paths.map((file) => ({ category: 'files', path: file, kind: 'filename-conflict', detail: item.name }))) : []),
         ...(category !== 'files' ? result.deviations.map((item) => ({ category: 'validation', path: item.filePath, kind: item.kind, detail: item.detail })) : [])
@@ -369,6 +368,7 @@ export function register(api: ValleyPluginApi): () => void {
     offChanges()
     listeners.clear()
     disposeStyles()
+    return projection.dispose()
   }
 }
 

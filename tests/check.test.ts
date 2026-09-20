@@ -49,7 +49,7 @@ describe('Check automation and bookmarks', () => {
     try {
       expect(await api.commands.execute('check:results', { category: 'files', limit: 1 })).toMatchObject({ ok: true, value: { total: 2, nextOffset: 1, rows: [{ path: 'Forest/Oak.md' }] } })
       const surface = api.interop.extensions.providers(PLUGIN_SURFACE_V1)[0].extension
-      expect(() => surface.restore({ category: 'files', path: 'Removed.md' })).toThrow('no longer exists')
+      await expect(surface.restore({ category: 'files', path: 'Removed.md' })).rejects.toThrow('no longer exists')
     } finally { off() }
   })
 

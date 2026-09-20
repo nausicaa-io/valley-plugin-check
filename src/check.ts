@@ -1,6 +1,6 @@
 /**
  * Pure, React-free check logic. Runs against the vault index entries the host
- * exposes via `api.getState().indexEntries` — every file with parsed,
+ * exposes through a scoped index observation — every file with parsed,
  * order-preserving `frontmatter` — so Check needs no filesystem access.
  *
  * Two validations:
@@ -10,7 +10,9 @@
  *    template schema for a `type` is derived from the template file's own `type`
  *    frontmatter inside the configured templates folder — no hardcoded mapping.
  */
-import type { IndexEntry } from '@valley/plugin-sdk/types'
+import type { PluginIndexEntry } from '@valley/plugin-sdk'
+
+type CheckEntry = Pick<PluginIndexEntry, 'relPath' | 'kind' | 'frontmatter'>
 import type { CheckConfig, CheckResult, Deviation, FilenameConflict, TemplateSchema } from './types'
 import { areTypesCompatible, detectType } from './typeDetect'
 
@@ -26,7 +28,7 @@ export function parseList(value: unknown): string[] {
 }
 
 /** `.json` and `.jsonl` are Notes data files, never user notes — always ignored. */
-const ALWAYS_IGNORED_EXTENSIONS = ['.json', '.jsonl']
+export const ALWAYS_IGNORED_EXTENSIONS = ['.json', '.jsonl']
 
 /** Normalize a list of extensions to lowercase, dot-prefixed, de-duplicated. */
 export function parseExtList(value: unknown): string[] {
@@ -39,14 +41,14 @@ export function parseExtList(value: unknown): string[] {
 }
 
 /** Basename without directory or extension. */
-function baseName(relPath: string): string {
+export function baseName(relPath: string): string {
   const last = relPath.split('/').pop() ?? relPath
   const dot = last.lastIndexOf('.')
   return dot > 0 ? last.slice(0, dot) : last
 }
 
 /** Lowercased extension including the dot (`""` when the file has none). */
-function fileExt(relPath: string): string {
+export function fileExt(relPath: string): string {
   const last = relPath.split('/').pop() ?? relPath
   const dot = last.lastIndexOf('.')
   return dot > 0 ? last.slice(dot).toLowerCase() : ''
@@ -78,25 +80,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * templates folder whose frontmatter declares a `type`. Key order is the
  * frontmatter key insertion order (preserved by the index's YAML parser).
  */
-export function buildRegistry(entries: IndexEntry[], templatesFolder: string): Map<string, TemplateSchema> {
+export function buildRegistry(entries: readonly CheckEntry[], templatesFolder: string): Map<string, TemplateSchema> {
   const registry = new Map<string, TemplateSchema>()
   if (!templatesFolder) return registry
   for (const entry of entries) {
-    if (entry.kind !== 'note') continue
-    if (!inFolder(entry.relPath, templatesFolder)) continue
-    const fm = entry.frontmatter
-    if (!isRecord(fm)) continue
-    const typeRaw = fm.type
-    if (typeof typeRaw !== 'string' || !typeRaw.trim()) continue
-    const type = typeRaw.toLowerCase().trim()
-    const keyOrder = Object.keys(fm)
-    registry.set(type, { keyOrder, keySet: new Set(keyOrder), values: fm })
+    const template = templateSchema(entry, templatesFolder)
+    if (template) registry.set(template.type, template.schema)
   }
   return registry
 }
 
+export function noteType(entry: CheckEntry): string {
+  const type = entry.frontmatter?.type
+  return typeof type === 'string' ? type.toLowerCase().trim() : ''
+}
+
+export function templateSchema(entry: CheckEntry, folder: string): { type: string; schema: TemplateSchema } | null {
+  if (entry.kind !== 'note' || !inFolder(entry.relPath, folder)) return null
+  const type = noteType(entry)
+  if (!type || !isRecord(entry.frontmatter)) return null
+  const keyOrder = Object.keys(entry.frontmatter)
+  return { type, schema: { keyOrder, keySet: new Set(keyOrder), values: entry.frontmatter } }
+}
+
+export function checkableNote(entry: CheckEntry, config: CheckConfig): boolean {
+  return config.templateCheck && entry.kind === 'note' && !inFolder(entry.relPath, config.templatesFolder)
+    && !isExcluded(entry.relPath, config.excludedFolders, config.excludedPatterns)
+}
+
 /** Detect duplicate file names (basename without extension, case-insensitive). */
-function findFilenameConflicts(entries: IndexEntry[], config: CheckConfig): FilenameConflict[] {
+function findFilenameConflicts(entries: readonly CheckEntry[], config: CheckConfig): FilenameConflict[] {
   const ignoredExt = new Set([...config.ignoredExtensions, ...ALWAYS_IGNORED_EXTENSIONS])
   const groups = new Map<string, { display: string; paths: string[] }>()
   for (const entry of entries) {
@@ -117,8 +130,8 @@ function findFilenameConflicts(entries: IndexEntry[], config: CheckConfig): File
 }
 
 /** Compare one note against its template schema, emitting deviations. */
-function checkNote(
-  entry: IndexEntry,
+export function checkNote(
+  entry: CheckEntry,
   registry: Map<string, TemplateSchema>,
   ignored: Set<string>,
   out: Deviation[]
@@ -189,7 +202,7 @@ function checkNote(
   }
 }
 
-export function runChecks(entries: IndexEntry[], config: CheckConfig): CheckResult {
+export function runChecks(entries: readonly CheckEntry[], config: CheckConfig): CheckResult {
   const conflicts = config.strictFilename ? findFilenameConflicts(entries, config) : []
 
   const deviations: Deviation[] = []
@@ -197,9 +210,7 @@ export function runChecks(entries: IndexEntry[], config: CheckConfig): CheckResu
     const registry = buildRegistry(entries, config.templatesFolder)
     const ignored = new Set(config.ignoredKeys)
     for (const entry of entries) {
-      if (entry.kind !== 'note') continue
-      if (inFolder(entry.relPath, config.templatesFolder)) continue
-      if (isExcluded(entry.relPath, config.excludedFolders, config.excludedPatterns)) continue
+      if (!checkableNote(entry, config)) continue
       checkNote(entry, registry, ignored, deviations)
     }
   }
